@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const login = (password: string) => {
-    if (password === 'password') {
+    if (password === 'GriffinWazHere') {
       setIsAuthenticated(true);
       return true;
     }
