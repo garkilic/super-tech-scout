@@ -3,4 +3,8 @@ export const API_CONFIG = {
   OPENAI_MODEL: 'gpt-4-turbo-preview',
   OPENAI_TEMPERATURE: 0.7,
   OPENAI_MAX_TOKENS: 2000,
+  GEMINI_API_KEY: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
+  GEMINI_MODEL: 'gemini-2.0-flash',
+  GEMINI_TEMPERATURE: 0.7,
+  GEMINI_MAX_TOKENS: 2000,
 }; 

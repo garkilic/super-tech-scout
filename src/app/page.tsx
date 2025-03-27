@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import SearchForm from '../components/SearchForm';
 import ProgressTracker from '../components/ProgressTracker';
 import ReportDisplay from '../components/ReportDisplay';
-import { analyzeTechnology } from '../services/chatgpt';
+import { analyzeTechnology as analyzeWithGPT4 } from '../services/chatgpt';
+import { analyzeTechnology as analyzeWithGemini } from '../services/gemini';
 import { synthesizeReport } from '../services/synthesis';
 
 type StepStatus = 'pending' | 'in_progress' | 'completed';
@@ -22,7 +23,7 @@ export default function Home() {
   const [report, setReport] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([
     { id: 'gpt4', name: 'GPT-4 Analysis', status: 'pending' },
-    { id: 'claude', name: 'Claude Analysis', status: 'pending' },
+    { id: 'gemini', name: 'Gemini Analysis', status: 'pending' },
     { id: 'synthesis', name: 'Report Synthesis', status: 'pending' },
   ]);
 
@@ -37,7 +38,7 @@ export default function Home() {
         index === 0 ? { ...step, status: 'in_progress' } : step
       ));
       
-      const gpt4Result = await analyzeTechnology(topic);
+      const gpt4Result = await analyzeWithGPT4(topic);
       if (gpt4Result.error) {
         throw new Error(`GPT-4 Analysis failed: ${gpt4Result.error}`);
       }
@@ -46,29 +47,15 @@ export default function Home() {
         index === 0 ? { ...step, status: 'completed' } : step
       ));
 
-      // Simulate Claude Analysis for now (we'll replace this with real Claude API call later)
+      // Gemini Analysis
       setSteps(prev => prev.map((step, index) => 
         index === 1 ? { ...step, status: 'in_progress' } : step
       ));
       
-      // Temporary Claude response (we'll replace this with real API call)
-      const claudeResult = {
-        content: `## Claude Analysis of ${topic}
-
-### Overview
-This is a placeholder for Claude's analysis. We'll implement the actual Claude API integration soon.
-
-### Key Points
-- Placeholder point 1
-- Placeholder point 2
-- Placeholder point 3
-
-### Technical Analysis
-This section will contain Claude's technical analysis once implemented.
-
-### Market Impact
-This section will contain Claude's market analysis once implemented.`
-      };
+      const geminiResult = await analyzeWithGemini(topic);
+      if (geminiResult.error) {
+        throw new Error(`Gemini Analysis failed: ${geminiResult.error}`);
+      }
 
       setSteps(prev => prev.map((step, index) => 
         index === 1 ? { ...step, status: 'completed' } : step
@@ -82,7 +69,7 @@ This section will contain Claude's market analysis once implemented.`
       const synthesizedReport = await synthesizeReport({
         topic,
         gpt4Analysis: gpt4Result.content,
-        claudeAnalysis: claudeResult.content,
+        geminiAnalysis: geminiResult.content,
       });
 
       setSteps(prev => prev.map((step, index) => 

@@ -1,23 +1,23 @@
 interface SynthesisInput {
   topic: string;
   gpt4Analysis: string;
-  claudeAnalysis: string;
+  geminiAnalysis: string;
 }
 
-export async function synthesizeReport({ topic, gpt4Analysis, claudeAnalysis }: SynthesisInput): Promise<string> {
+export async function synthesizeReport({ topic, gpt4Analysis, geminiAnalysis }: SynthesisInput): Promise<string> {
   // For now, we'll create a simple synthesis that combines both analyses
   // Later, we can add more sophisticated synthesis logic or even use another LLM for synthesis
   
   return `# Research Report: ${topic}
 
 ## Overview
-This report combines insights from GPT-4 and Claude to provide a comprehensive analysis of ${topic}.
+This report combines insights from GPT-4 and Gemini to provide a comprehensive analysis of ${topic}.
 
 ## GPT-4 Analysis
 ${gpt4Analysis}
 
-## Claude Analysis
-${claudeAnalysis}
+## Gemini Analysis
+${geminiAnalysis}
 
 ## Key Takeaways
 - Combined insights from multiple AI models provide a more comprehensive view
@@ -32,5 +32,5 @@ Based on the combined analysis, here are the key recommendations:
 4. Monitor future developments and trends
 
 ---
-*This report was generated using Super Tech Scout, combining insights from GPT-4 and Claude.*`;
+*This report was generated using Super Tech Scout, combining insights from GPT-4 and Gemini.*`;
 } 
