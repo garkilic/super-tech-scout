@@ -5,7 +5,7 @@
 package-lock.json
 yarn.lock
 
-# testing
+# testing 
 /coverage
 
 # next.js
