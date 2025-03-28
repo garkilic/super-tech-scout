@@ -1,92 +1,60 @@
-import React, { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import React, { useState } from 'react';
+import { Document, Page, Text, View, StyleSheet, PDFViewer, pdf } from '@react-pdf/renderer';
 
 interface ReportDisplayProps {
   report: string;
   onDownload: () => void;
 }
 
+// Create styles
+const styles = StyleSheet.create({
+  page: {
+    padding: 40,
+    backgroundColor: '#ffffff',
+  },
+  container: {
+    maxWidth: 700,
+    margin: '0 auto',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 700,
+    marginBottom: 24,
+    color: '#000000',
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: 600,
+    marginBottom: 16,
+    color: '#000000',
+  },
+  paragraph: {
+    fontSize: 12,
+    lineHeight: 1.6,
+    marginBottom: 16,
+    color: '#000000',
+  },
+  footer: {
+    marginTop: 32,
+    paddingTop: 16,
+    borderTop: '1px solid #e5e7eb',
+  },
+});
+
 export default function ReportDisplay({ report, onDownload }: ReportDisplayProps) {
-  const reportRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleDownload = async () => {
-    if (!reportRef.current) {
-      setError('PDF generation failed: Target element is null');
-      return;
-    }
-
-    // Reset states
-    setError(null);
-    setIsGenerating(true);
-
-    try {
-      // Temporarily make the element visible for PDF generation
-      reportRef.current.style.display = 'block';
-      
-      // Create canvas from HTML
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        logging: true,
-        backgroundColor: '#ffffff',
-        windowWidth: reportRef.current.scrollWidth,
-        windowHeight: reportRef.current.scrollHeight
-      });
-
-      // Calculate dimensions
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Add first page
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add additional pages if content overflows
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      // Save the PDF
-      pdf.save('research-report.pdf');
-      
-      // Hide the element again after PDF generation
-      reportRef.current.style.display = 'none';
-      
-      onDownload();
-      setIsGenerating(false);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setError('Failed to generate PDF. Please try again.');
-      // Ensure element is hidden even if there's an error
-      if (reportRef.current) {
-        reportRef.current.style.display = 'none';
-      }
-      setIsGenerating(false);
-    }
-  };
-
-  // Create formatted HTML content for PDF
+  // Create formatted content for PDF
   const formattedContent = report.split('\n').map(line => {
     const trimmedLine = line.trim();
     
     // Skip empty lines
-    if (!trimmedLine) return '';
+    if (!trimmedLine) return null;
     
     // Handle main title
     if (trimmedLine.startsWith('RESEARCH REPORT:')) {
-      return `<h1 class="text-3xl font-bold mb-6">${trimmedLine}</h1>`;
+      return <Text style={styles.title}>{trimmedLine}</Text>;
     }
     
     // Handle section headers
@@ -95,17 +63,56 @@ export default function ReportDisplay({ report, onDownload }: ReportDisplayProps
         trimmedLine === 'MARKET LANDSCAPE AND INDUSTRY IMPACT' ||
         trimmedLine === 'FUTURE OUTLOOK AND DEVELOPMENTS' ||
         trimmedLine === 'SUMMARY AND RECOMMENDATIONS') {
-      return `<h2 class="text-2xl font-semibold mb-4">${trimmedLine}</h2>`;
+      return <Text style={styles.sectionHeader}>{trimmedLine}</Text>;
     }
     
     // Handle footer
     if (trimmedLine.startsWith('---')) {
-      return `<div class="mt-8 pt-4 border-t border-gray-300">`;
+      return <View style={styles.footer} />;
     }
     
     // Handle regular content
-    return `<p class="mb-4 leading-relaxed">${trimmedLine}</p>`;
-  }).join('');
+    return <Text style={styles.paragraph}>{trimmedLine}</Text>;
+  }).filter(Boolean);
+
+  const MyDocument = () => (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.container}>
+          {formattedContent}
+        </View>
+      </Page>
+    </Document>
+  );
+
+  const handleDownload = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      // Generate PDF blob
+      const blob = await pdf(<MyDocument />).toBlob();
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'research-report.pdf';
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      onDownload();
+      setIsGenerating(false);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError('Failed to generate PDF. Please try again.');
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-8">
@@ -137,15 +144,6 @@ export default function ReportDisplay({ report, onDownload }: ReportDisplayProps
               'Download PDF'
             )}
           </button>
-        </div>
-        
-        {/* Hidden div for PDF generation */}
-        <div ref={reportRef} style={{ display: 'none' }}>
-          <div className="p-8 bg-white text-black">
-            <div className="max-w-3xl mx-auto">
-              <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
-            </div>
-          </div>
         </div>
 
         {/* Status messages */}
