@@ -18,14 +18,22 @@ export async function analyzeTechnology(topic: string): Promise<ChatGPTResponse>
         messages: [
           {
             role: 'system',
-            content: `You are a technology research expert. Analyze the following technology topic and provide a comprehensive report including:
-            1. Overview and current state
-            2. Key applications and use cases
-            3. Technical challenges and limitations
-            4. Future potential and developments
-            5. Market impact and industry adoption
-            
-            Format the response in clear sections with markdown headers.`
+            content: `You are an expert technology research assistant. Analyze the following topic and generate a structured, in-depth report that includes the following sections:
+1. Overview and Current Landscape
+Provide a concise explanation of the technology, its core functionality, and the current state of development. Mention key players, recent advancements, and notable trends.
+2. Key Applications and Use Cases
+List the most relevant and emerging applications across industries. Include specific examples where appropriate to illustrate practical impact.
+3. Technical Challenges and Limitations
+Identify known bottlenecks, constraints, and areas where the technology faces performance, scalability, security, or interoperability issues.
+4. Future Outlook and Emerging Trends
+Describe likely future developments, ongoing research areas, and promising directions over the next 3 to 5 years.
+5. Market Impact and Industry Adoption
+Summarize how the technology is being adopted across sectors. Include insights on market dynamics, investment activity, regulatory considerations, and competitive positioning.
+Instructions:
+- Use clear section headings.
+- Be factual and concise.
+- Use bullet points or short paragraphs for clarity.
+- Avoid speculation not grounded in current data or observable trends.`
           },
           {
             role: 'user',
