@@ -132,7 +132,7 @@ export default function Home() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Super Tech Scout</h1>
           <p className="text-xl text-gray-300">
-            Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4 and Claude to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
+            Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4 and Gemini to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
           </p>
         </div>
 
