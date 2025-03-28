@@ -4,6 +4,19 @@ interface SynthesisInput {
   geminiAnalysis: string;
 }
 
+function cleanText(text: string): string {
+  // Remove markdown formatting
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*(.*?)\*/g, '$1')     // Remove italic
+    .replace(/`(.*?)`/g, '$1')       // Remove code
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links
+    .replace(/^\s*[-*]\s*/, '')      // Remove bullet points
+    .replace(/^\s*\d+\.\s*/, '')     // Remove numbered lists
+    .replace(/\n{3,}/g, '\n\n')      // Normalize multiple newlines
+    .trim();
+}
+
 function extractKeyPoints(analysis: string): string[] {
   // Split the analysis into sections and extract key points
   const sections = analysis.split('\n\n');
@@ -12,10 +25,10 @@ function extractKeyPoints(analysis: string): string[] {
   sections.forEach(section => {
     const lines = section.split('\n');
     lines.forEach(line => {
-      // Look for bullet points, numbered lists, or key statements
-      if (line.trim().startsWith('*') || line.trim().startsWith('-') || 
-          line.trim().match(/^\d+\./) || line.trim().length > 50) {
-        keyPoints.push(line.trim().replace(/^[*\-]\s*/, '').replace(/^\d+\.\s*/, ''));
+      const cleanedLine = cleanText(line);
+      // Look for key statements (longer lines that aren't headers)
+      if (cleanedLine.length > 50 && !cleanedLine.match(/^[A-Z\s:]+$/)) {
+        keyPoints.push(cleanedLine);
       }
     });
   });
@@ -95,67 +108,67 @@ TECHNOLOGY OVERVIEW
 ${topic} represents a significant advancement in its field, offering unique capabilities and advantages. This section provides a detailed examination of the technology's core components, architecture, and fundamental principles.
 
 Key Components:
-${technicalPoints.slice(0, 5).map(point => `• ${point}`).join('\n')}
+${technicalPoints.slice(0, 5).map(point => point).join('\n')}
 
 Architecture and Design:
-${technicalPoints.slice(5, 10).map(point => `• ${point}`).join('\n')}
+${technicalPoints.slice(5, 10).map(point => point).join('\n')}
 
 TECHNICAL ANALYSIS
 This section delves into the technical aspects of ${topic}, including its implementation details, performance characteristics, and technical requirements.
 
 Implementation Details:
-${technicalPoints.slice(10, 15).map(point => `• ${point}`).join('\n')}
+${technicalPoints.slice(10, 15).map(point => point).join('\n')}
 
 Performance Characteristics:
-${technicalPoints.slice(15, 20).map(point => `• ${point}`).join('\n')}
+${technicalPoints.slice(15, 20).map(point => point).join('\n')}
 
 MARKET ANALYSIS
 The market landscape for ${topic} is dynamic and evolving. This section examines current market trends, key players, and adoption patterns.
 
 Market Trends:
-${marketPoints.slice(0, 5).map(point => `• ${point}`).join('\n')}
+${marketPoints.slice(0, 5).map(point => point).join('\n')}
 
 Industry Adoption:
-${marketPoints.slice(5, 10).map(point => `• ${point}`).join('\n')}
+${marketPoints.slice(5, 10).map(point => point).join('\n')}
 
 Investment Landscape:
-${marketPoints.slice(10, 15).map(point => `• ${point}`).join('\n')}
+${marketPoints.slice(10, 15).map(point => point).join('\n')}
 
 SECURITY AND COMPLIANCE
 Security and compliance considerations are crucial for any technology adoption. This section addresses key security features, privacy concerns, and regulatory requirements.
 
 Security Features:
-${securityPoints.slice(0, 5).map(point => `• ${point}`).join('\n')}
+${securityPoints.slice(0, 5).map(point => point).join('\n')}
 
 Compliance Requirements:
-${securityPoints.slice(5, 10).map(point => `• ${point}`).join('\n')}
+${securityPoints.slice(5, 10).map(point => point).join('\n')}
 
 Privacy Considerations:
-${securityPoints.slice(10, 15).map(point => `• ${point}`).join('\n')}
+${securityPoints.slice(10, 15).map(point => point).join('\n')}
 
 INTEGRATION AND IMPLEMENTATION
 This section explores the practical aspects of implementing ${topic}, including integration requirements, compatibility considerations, and deployment strategies.
 
 Integration Requirements:
-${integrationPoints.slice(0, 5).map(point => `• ${point}`).join('\n')}
+${integrationPoints.slice(0, 5).map(point => point).join('\n')}
 
 Implementation Considerations:
-${integrationPoints.slice(5, 10).map(point => `• ${point}`).join('\n')}
+${integrationPoints.slice(5, 10).map(point => point).join('\n')}
 
 Deployment Strategies:
-${integrationPoints.slice(10, 15).map(point => `• ${point}`).join('\n')}
+${integrationPoints.slice(10, 15).map(point => point).join('\n')}
 
 FUTURE OUTLOOK
 The future of ${topic} holds significant potential for innovation and growth. This section examines emerging trends, potential developments, and future possibilities.
 
 Emerging Trends:
-${futurePoints.slice(0, 5).map(point => `• ${point}`).join('\n')}
+${futurePoints.slice(0, 5).map(point => point).join('\n')}
 
 Potential Developments:
-${futurePoints.slice(5, 10).map(point => `• ${point}`).join('\n')}
+${futurePoints.slice(5, 10).map(point => point).join('\n')}
 
 Innovation Opportunities:
-${futurePoints.slice(10, 15).map(point => `• ${point}`).join('\n')}
+${futurePoints.slice(10, 15).map(point => point).join('\n')}
 
 STRATEGIC RECOMMENDATIONS
 Based on the comprehensive analysis, this section provides strategic recommendations for organizations considering ${topic}.
@@ -171,22 +184,22 @@ RISK ASSESSMENT
 This section identifies and analyzes potential risks associated with ${topic} adoption and implementation.
 
 Technical Risks:
-• Integration complexity
-• Performance limitations
-• Scalability concerns
-• Maintenance requirements
+Integration complexity
+Performance limitations
+Scalability concerns
+Maintenance requirements
 
 Business Risks:
-• Market volatility
-• Competitive pressure
-• Investment requirements
-• ROI uncertainty
+Market volatility
+Competitive pressure
+Investment requirements
+ROI uncertainty
 
 Security Risks:
-• Data protection
-• Compliance challenges
-• Privacy concerns
-• Regulatory changes
+Data protection
+Compliance challenges
+Privacy concerns
+Regulatory changes
 
 CONCLUSION
 ${topic} represents a significant technological advancement with the potential to transform industries and create new opportunities. Organizations should carefully evaluate the technical, market, and strategic implications before making adoption decisions.
