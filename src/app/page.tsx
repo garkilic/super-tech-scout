@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import SearchForm from '../components/SearchForm';
 import ProgressTracker from '../components/ProgressTracker';
 import ReportDisplay from '../components/ReportDisplay';
@@ -19,6 +20,7 @@ interface Step {
 
 export default function Home() {
   const { isAuthenticated, login } = useAuth();
+  const { showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([
@@ -26,6 +28,8 @@ export default function Home() {
     { id: 'gemini', name: 'Gemini Analysis', status: 'pending' },
     { id: 'synthesis', name: 'Report Synthesis', status: 'pending' },
   ]);
+
+  const isResearchInProgress = isLoading || (report && steps[2].status !== 'completed');
 
   const handleSearch = async (topic: string) => {
     setIsLoading(true);
@@ -72,14 +76,22 @@ export default function Home() {
         geminiAnalysis: geminiResult.content,
       });
 
+      // Store the report
+      setReport(synthesizedReport);
+
+      // Wait for 2 seconds to simulate synthesis progress
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Complete the synthesis step
       setSteps(prev => prev.map((step, index) => 
         index === 2 ? { ...step, status: 'completed' } : step
       ));
 
-      setReport(synthesizedReport);
     } catch (error) {
       console.error('Research failed:', error);
-      setReport(`# Error\n\nFailed to complete the research: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      showError(errorMessage);
+      setReport(`# Error\n\nFailed to complete the research: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -130,17 +142,33 @@ export default function Home() {
     <main className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Super Tech Scout</h1>
-          <p className="text-xl text-gray-300">
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
+            Super Tech Scout
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4 and Claude to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
           </p>
+          <a 
+            href="https://griffinarkilic.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block mt-4 text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200"
+          >
+            by Griffin Arkilic
+          </a>
         </div>
 
-        <SearchForm onSubmit={handleSearch} isLoading={isLoading} />
+        <SearchForm onSubmit={handleSearch} isLoading={isResearchInProgress} />
         
         <ProgressTracker steps={steps} />
         
-        {report && <ReportDisplay report={report} onDownload={handleDownload} />}
+        {report && steps[2].status === 'completed' && (
+          <ReportDisplay 
+            report={report} 
+            onDownload={handleDownload} 
+            isSynthesisComplete={true}
+          />
+        )}
       </div>
     </main>
   );

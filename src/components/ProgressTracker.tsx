@@ -23,8 +23,8 @@ export default function ProgressTracker({ steps, onStepComplete }: ProgressTrack
     steps.forEach((step) => {
       if (step.status === 'in_progress' || step.status === 'completed') {
         const startTime = Date.now();
-        // Random duration between 2-5 seconds
-        const duration = 2000 + Math.random() * 3000;
+        // Use 2 seconds for synthesis step, random duration for others
+        const duration = step.id === 'synthesis' ? 2000 : 2000 + Math.random() * 3000;
         let lastUpdateTime = startTime;
         let currentProgress = 0;
 
