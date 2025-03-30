@@ -8,6 +8,7 @@ import ProgressTracker from '../components/ProgressTracker';
 import ReportDisplay from '../components/ReportDisplay';
 import { analyzeTechnology as analyzeWithGPT4 } from '../services/chatgpt';
 import { analyzeTechnology as analyzeWithGemini } from '../services/gemini';
+import { analyzeTechnology as analyzeWithClaude } from '../services/claude';
 import { synthesizeReport } from '../services/synthesis';
 
 type StepStatus = 'pending' | 'in_progress' | 'completed';
@@ -26,10 +27,11 @@ export default function Home() {
   const [steps, setSteps] = useState<Step[]>([
     { id: 'gpt4', name: 'GPT-4 Analysis', status: 'pending' },
     { id: 'gemini', name: 'Gemini Analysis', status: 'pending' },
+    { id: 'claude', name: 'Claude Analysis', status: 'pending' },
     { id: 'synthesis', name: 'Report Synthesis', status: 'pending' },
   ]);
 
-  const isResearchInProgress = isLoading || (report && steps[2].status !== 'completed');
+  const isResearchInProgress = isLoading || (report && steps[3].status !== 'completed');
 
   const handleSearch = async (topic: string) => {
     setIsLoading(true);
@@ -65,15 +67,30 @@ export default function Home() {
         index === 1 ? { ...step, status: 'completed' } : step
       ));
 
-      // Synthesis
+      // Claude Analysis
       setSteps(prev => prev.map((step, index) => 
         index === 2 ? { ...step, status: 'in_progress' } : step
+      ));
+      
+      const claudeResult = await analyzeWithClaude(topic);
+      if (claudeResult.error) {
+        throw new Error(`Claude Analysis failed: ${claudeResult.error}`);
+      }
+
+      setSteps(prev => prev.map((step, index) => 
+        index === 2 ? { ...step, status: 'completed' } : step
+      ));
+
+      // Synthesis
+      setSteps(prev => prev.map((step, index) => 
+        index === 3 ? { ...step, status: 'in_progress' } : step
       ));
 
       const synthesizedReport = await synthesizeReport({
         topic,
         gpt4Analysis: gpt4Result.content,
         geminiAnalysis: geminiResult.content,
+        claudeAnalysis: claudeResult.content,
       });
 
       // Store the report
@@ -84,7 +101,7 @@ export default function Home() {
 
       // Complete the synthesis step
       setSteps(prev => prev.map((step, index) => 
-        index === 2 ? { ...step, status: 'completed' } : step
+        index === 3 ? { ...step, status: 'completed' } : step
       ));
 
     } catch (error) {
@@ -146,7 +163,7 @@ export default function Home() {
             Super Tech Scout
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4 and Gemini to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
+            Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4, Gemini, and Claude to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
           </p>
           <a 
             href="https://griffinarkilic.com" 
@@ -162,7 +179,7 @@ export default function Home() {
         
         <ProgressTracker steps={steps} />
         
-        {report && steps[2].status === 'completed' && (
+        {report && steps[3].status === 'completed' && (
           <ReportDisplay 
             report={report} 
             onDownload={handleDownload} 

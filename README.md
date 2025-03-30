@@ -4,7 +4,7 @@ Super Tech Scout is a web application that provides comprehensive technology res
 
 ## Features
 
-- **Multi-Model Analysis**: Combines insights from both GPT-4 and Gemini for comprehensive technology research
+- **Multi-Model Analysis**: Combines insights from GPT-4, Gemini, and Claude for comprehensive technology research
 - **Progress Tracking**: Real-time visualization of the analysis progress
 - **Unified Reports**: Synthesizes findings from multiple AI models into a single coherent report
 - **Password Protection**: Secure access control for the application
@@ -18,3 +18,4 @@ Super Tech Scout is a web application that provides comprehensive technology res
 - Tailwind CSS
 - GPT-4 API
 - Gemini API
+- Claude API

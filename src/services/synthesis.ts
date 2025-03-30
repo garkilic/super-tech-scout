@@ -2,6 +2,7 @@ interface SynthesisInput {
   topic: string;
   gpt4Analysis: string;
   geminiAnalysis: string;
+  claudeAnalysis: string;
 }
 
 function cleanText(text: string): string {
@@ -36,12 +37,13 @@ function extractKeyPoints(analysis: string): string[] {
   return keyPoints;
 }
 
-function formatPlaintextReport(topic: string, gpt4Analysis: string, geminiAnalysis: string): string {
+function formatPlaintextReport(topic: string, gpt4Analysis: string, geminiAnalysis: string, claudeAnalysis: string): string {
   const gpt4Points = extractKeyPoints(gpt4Analysis);
   const geminiPoints = extractKeyPoints(geminiAnalysis);
+  const claudePoints = extractKeyPoints(claudeAnalysis);
   
   // Combine and deduplicate key points
-  const combinedPoints = Array.from(new Set([...gpt4Points, ...geminiPoints]));
+  const combinedPoints = Array.from(new Set([...gpt4Points, ...geminiPoints, ...claudePoints]));
   
   // Group points into logical sections
   const technicalPoints = combinedPoints.filter(point => 
@@ -212,9 +214,9 @@ Key Takeaways:
 5. Future growth potential
 
 ---
-This report was generated using Super Tech Scout, combining insights from GPT-4 and Gemini AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.`;
+This report was generated using Super Tech Scout, combining insights from GPT-4, Gemini, and Claude AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.`;
 }
 
-export async function synthesizeReport({ topic, gpt4Analysis, geminiAnalysis }: SynthesisInput): Promise<string> {
-  return formatPlaintextReport(topic, gpt4Analysis, geminiAnalysis);
+export async function synthesizeReport({ topic, gpt4Analysis, geminiAnalysis, claudeAnalysis }: SynthesisInput): Promise<string> {
+  return formatPlaintextReport(topic, gpt4Analysis, geminiAnalysis, claudeAnalysis);
 } 
