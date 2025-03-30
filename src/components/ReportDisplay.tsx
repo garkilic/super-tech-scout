@@ -18,27 +18,65 @@ const styles = StyleSheet.create({
     margin: '0 auto',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 700,
-    marginBottom: 24,
-    color: '#000000',
+    fontSize: 32,
+    fontWeight: 800,
+    marginBottom: 32,
+    color: '#1a365d',
+    textAlign: 'center',
   },
   sectionHeader: {
-    fontSize: 20,
-    fontWeight: 600,
+    fontSize: 24,
+    fontWeight: 700,
+    marginTop: 24,
     marginBottom: 16,
-    color: '#000000',
+    color: '#2d3748',
+    borderBottom: '2px solid #e2e8f0',
+    paddingBottom: 8,
+  },
+  subsectionHeader: {
+    fontSize: 18,
+    fontWeight: 600,
+    marginTop: 16,
+    marginBottom: 12,
+    color: '#4a5568',
   },
   paragraph: {
     fontSize: 12,
-    lineHeight: 1.6,
-    marginBottom: 16,
-    color: '#000000',
+    lineHeight: 1.8,
+    marginBottom: 12,
+    color: '#2d3748',
+  },
+  bulletPoint: {
+    fontSize: 12,
+    lineHeight: 1.8,
+    marginBottom: 8,
+    color: '#2d3748',
+    paddingLeft: 12,
   },
   footer: {
-    marginTop: 32,
-    paddingTop: 16,
-    borderTop: '1px solid #e5e7eb',
+    marginTop: 40,
+    paddingTop: 20,
+    borderTop: '1px solid #e2e8f0',
+    fontSize: 10,
+    color: '#718096',
+    textAlign: 'center',
+  },
+  tableOfContents: {
+    marginBottom: 32,
+    padding: 16,
+    backgroundColor: '#f7fafc',
+    borderRadius: 4,
+  },
+  tocTitle: {
+    fontSize: 16,
+    fontWeight: 600,
+    marginBottom: 12,
+    color: '#2d3748',
+  },
+  tocItem: {
+    fontSize: 12,
+    marginBottom: 6,
+    color: '#4a5568',
   },
 });
 
@@ -76,6 +114,16 @@ export default function ReportDisplay({ report, onDownload, isSynthesisComplete 
         trimmedLine === 'FUTURE OUTLOOK AND DEVELOPMENTS' ||
         trimmedLine === 'SUMMARY AND RECOMMENDATIONS') {
       return <Text style={styles.sectionHeader}>{trimmedLine}</Text>;
+    }
+    
+    // Handle subsection headers (lines that are all caps but shorter)
+    if (trimmedLine.match(/^[A-Z\s:]+$/) && trimmedLine.length < 50) {
+      return <Text style={styles.subsectionHeader}>{trimmedLine}</Text>;
+    }
+    
+    // Handle bullet points
+    if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
+      return <Text style={styles.bulletPoint}>{trimmedLine}</Text>;
     }
     
     // Handle footer
