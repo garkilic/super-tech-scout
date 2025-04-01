@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import SearchForm from '../components/SearchForm';
 import ProgressTracker from '../components/ProgressTracker';
@@ -20,7 +19,6 @@ interface Step {
 }
 
 export default function Home() {
-  const { isAuthenticated, login } = useAuth();
   const { showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
@@ -39,65 +37,44 @@ export default function Home() {
     setSteps(steps.map(step => ({ ...step, status: 'pending' })));
 
     try {
-      // GPT-4 Analysis
+      // Start GPT-4 analysis
       setSteps(prev => prev.map((step, index) => 
         index === 0 ? { ...step, status: 'in_progress' } : step
       ));
-      
-      const gpt4Result = await analyzeWithGPT4(topic);
-      if (gpt4Result.error) {
-        throw new Error(`GPT-4 Analysis failed: ${gpt4Result.error}`);
-      }
-
+      const gpt4Analysis = await analyzeWithGPT4(topic);
       setSteps(prev => prev.map((step, index) => 
         index === 0 ? { ...step, status: 'completed' } : step
       ));
 
-      // Gemini Analysis
+      // Start Gemini analysis
       setSteps(prev => prev.map((step, index) => 
         index === 1 ? { ...step, status: 'in_progress' } : step
       ));
-      
-      const geminiResult = await analyzeWithGemini(topic);
-      if (geminiResult.error) {
-        throw new Error(`Gemini Analysis failed: ${geminiResult.error}`);
-      }
-
+      const geminiAnalysis = await analyzeWithGemini(topic);
       setSteps(prev => prev.map((step, index) => 
         index === 1 ? { ...step, status: 'completed' } : step
       ));
 
-      // Claude Analysis
+      // Start Claude analysis
       setSteps(prev => prev.map((step, index) => 
         index === 2 ? { ...step, status: 'in_progress' } : step
       ));
-      
-      const claudeResult = await analyzeWithClaude(topic);
-      if (claudeResult.error) {
-        throw new Error(`Claude Analysis failed: ${claudeResult.error}`);
-      }
-
+      const claudeAnalysis = await analyzeWithClaude(topic);
       setSteps(prev => prev.map((step, index) => 
         index === 2 ? { ...step, status: 'completed' } : step
       ));
 
-      // Synthesis
+      // Start synthesis
       setSteps(prev => prev.map((step, index) => 
         index === 3 ? { ...step, status: 'in_progress' } : step
       ));
-
       const synthesizedReport = await synthesizeReport({
         topic,
-        gpt4Analysis: gpt4Result.content,
-        geminiAnalysis: geminiResult.content,
-        claudeAnalysis: claudeResult.content,
+        gpt4Analysis: gpt4Analysis.content,
+        geminiAnalysis: geminiAnalysis.content,
+        claudeAnalysis: claudeAnalysis.content,
       });
-
-      // Store the report
       setReport(synthesizedReport);
-
-      // Wait for 2 seconds to simulate synthesis progress
-      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Complete the synthesis step
       setSteps(prev => prev.map((step, index) => 
@@ -118,42 +95,6 @@ export default function Home() {
     // Implement PDF download functionality
     console.log('Downloading report...');
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="max-w-md w-full space-y-8 p-8 bg-gray-800 rounded-lg shadow-lg">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">Super Tech Scout</h2>
-            <p className="mt-2 text-gray-300">Please enter the password to continue</p>
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const password = formData.get('password') as string;
-              login(password);
-            }}
-            className="mt-8 space-y-6"
-          >
-            <input
-              type="password"
-              name="password"
-              required
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Enter password"
-            />
-            <button
-              type="submit"
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-            >
-              Login
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
