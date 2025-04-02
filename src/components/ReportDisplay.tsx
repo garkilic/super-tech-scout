@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Document, Page, Text, View, StyleSheet, PDFViewer, pdf } from '@react-pdf/renderer';
+import React, { useState } from 'react';
 
 interface ReportDisplayProps {
   report: string;
@@ -7,234 +6,75 @@ interface ReportDisplayProps {
   isSynthesisComplete: boolean;
 }
 
-// Create styles
-const styles = StyleSheet.create({
-  page: {
-    padding: 40,
-    backgroundColor: '#ffffff',
-  },
-  container: {
-    maxWidth: 700,
-    margin: '0 auto',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 800,
-    marginBottom: 32,
-    color: '#1a365d',
-    textAlign: 'center',
-  },
-  sectionHeader: {
-    fontSize: 24,
-    fontWeight: 700,
-    marginTop: 24,
-    marginBottom: 16,
-    color: '#2d3748',
-    borderBottom: '2px solid #e2e8f0',
-    paddingBottom: 8,
-  },
-  subsectionHeader: {
-    fontSize: 18,
-    fontWeight: 600,
-    marginTop: 16,
-    marginBottom: 12,
-    color: '#4a5568',
-  },
-  paragraph: {
-    fontSize: 12,
-    lineHeight: 1.8,
-    marginBottom: 12,
-    color: '#2d3748',
-  },
-  bulletPoint: {
-    fontSize: 12,
-    lineHeight: 1.8,
-    marginBottom: 8,
-    color: '#2d3748',
-    paddingLeft: 12,
-  },
-  footer: {
-    marginTop: 40,
-    paddingTop: 20,
-    borderTop: '1px solid #e2e8f0',
-    fontSize: 10,
-    color: '#718096',
-    textAlign: 'center',
-  },
-  tableOfContents: {
-    marginBottom: 32,
-    padding: 16,
-    backgroundColor: '#f7fafc',
-    borderRadius: 4,
-  },
-  tocTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    marginBottom: 12,
-    color: '#2d3748',
-  },
-  tocItem: {
-    fontSize: 12,
-    marginBottom: 6,
-    color: '#4a5568',
-  },
-});
-
 export default function ReportDisplay({ report, onDownload, isSynthesisComplete }: ReportDisplayProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDownload, setShowDownload] = useState(false);
-
-  useEffect(() => {
-    if (isSynthesisComplete) {
-      // Add a 3-second delay before showing the download button
-      const timer = setTimeout(() => {
-        setShowDownload(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isSynthesisComplete]);
-
-  // Create formatted content for PDF
-  const formattedContent = report.split('\n').map(line => {
-    const trimmedLine = line.trim();
-    
-    // Skip empty lines
-    if (!trimmedLine) return null;
-    
-    // Handle main title
-    if (trimmedLine.startsWith('RESEARCH REPORT:')) {
-      return <Text style={styles.title}>{trimmedLine}</Text>;
-    }
-    
-    // Handle section headers
-    if (trimmedLine === 'INTRODUCTION' || 
-        trimmedLine === 'CURRENT STATE AND TECHNICAL OVERVIEW' ||
-        trimmedLine === 'MARKET LANDSCAPE AND INDUSTRY IMPACT' ||
-        trimmedLine === 'FUTURE OUTLOOK AND DEVELOPMENTS' ||
-        trimmedLine === 'SUMMARY AND RECOMMENDATIONS') {
-      return <Text style={styles.sectionHeader}>{trimmedLine}</Text>;
-    }
-    
-    // Handle subsection headers (lines that are all caps but shorter)
-    if (trimmedLine.match(/^[A-Z\s:]+$/) && trimmedLine.length < 50) {
-      return <Text style={styles.subsectionHeader}>{trimmedLine}</Text>;
-    }
-    
-    // Handle bullet points
-    if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
-      return <Text style={styles.bulletPoint}>{trimmedLine}</Text>;
-    }
-    
-    // Handle footer
-    if (trimmedLine.startsWith('---')) {
-      return <View style={styles.footer} />;
-    }
-    
-    // Handle regular content
-    return <Text style={styles.paragraph}>{trimmedLine}</Text>;
-  }).filter(Boolean);
-
-  const MyDocument = () => (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.container}>
-          {formattedContent}
-        </View>
-      </Page>
-    </Document>
-  );
 
   const handleDownload = async () => {
     try {
       setIsGenerating(true);
       setError(null);
 
-      // Generate PDF blob
-      const blob = await pdf(<MyDocument />).toBlob();
-      
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'research-report.pdf';
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: report }),
+      });
 
-      onDownload();
-      setIsGenerating(false);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setError('Failed to generate PDF. Please try again.');
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'research-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Reset state after successful download
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 1000);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate PDF');
       setIsGenerating(false);
     }
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-8">
-      <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700">
-        <div className="flex flex-col space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-              Research Report
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Comprehensive analysis generated by Super Tech Scout
-            </p>
-          </div>
-
-          {showDownload && (
-            <button
-              onClick={handleDownload}
-              disabled={isGenerating}
-              className={`w-full px-8 py-4 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg 
-                ${isGenerating 
-                  ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:from-blue-600 hover:to-purple-700'
-                } 
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 
-                transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl`}
-            >
-              {isGenerating ? (
-                <>
-                  <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating PDF...
-                </>
-              ) : (
-                <>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download PDF Report
-                </>
-              )}
-            </button>
+      <div className="flex flex-col items-center space-y-4">
+        <button
+          onClick={handleDownload}
+          disabled={isGenerating || !isSynthesisComplete}
+          className={`px-8 py-4 rounded-lg font-medium transition-all duration-200 text-lg ${
+            isGenerating || !isSynthesisComplete
+              ? 'bg-blue-600 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600'
+          }`}
+        >
+          {isGenerating ? (
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Generating Research Report</span>
+            </div>
+          ) : (
+            'Download Research Report'
           )}
-        </div>
+        </button>
 
-        {/* Status messages */}
-        <div className="prose prose-invert max-w-none mt-6">
-          {error ? (
-            <div className="text-red-400 bg-red-900/20 p-4 rounded-lg">
-              {error}
-            </div>
-          ) : isGenerating ? (
-            <div className="text-blue-400 bg-blue-900/20 p-4 rounded-lg">
-              Generating your PDF report... This may take a few moments.
-            </div>
-          ) : !showDownload && isSynthesisComplete ? (
-            <div className="text-blue-400 bg-blue-900/20 p-4 rounded-lg">
-              Preparing your report for download... This will take a moment.
-            </div>
-          ) : null}
-        </div>
+        {error && (
+          <div className="text-red-400 text-sm">
+            Error: {error}
+          </div>
+        )}
       </div>
     </div>
   );
