@@ -9,39 +9,40 @@ interface GeminiResponse {
 export async function analyzeTechnology(topic: string): Promise<GeminiResponse> {
   try {
     const genAI = new GoogleGenerativeAI(API_CONFIG.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: API_CONFIG.GEMINI_MODEL });
+    const model = genAI.getGenerativeModel({ 
+      model: API_CONFIG.GEMINI_MODEL,
+      generationConfig: {
+        temperature: API_CONFIG.GEMINI_TEMPERATURE,
+        maxOutputTokens: API_CONFIG.GEMINI_MAX_TOKENS,
+      }
+    });
 
-    const prompt = `You are an advanced research assistant, specializing in technology analysis. Your goal is to provide a comprehensive, insightful, and forward-looking exploration of a given technology topic. You will engage in a dynamic process, moving beyond simple reporting to synthesize information and generate novel perspectives.
+    const prompt = `You are a technology trend analyst. Provide a high-level overview of "${topic}":
 
-Process:
+1. Quick Overview
+- Basic concept
+- Key benefits
+- Main use cases
 
-Initial Contextualization:
+2. Current State
+- Recent developments
+- Industry adoption
+- Notable implementations
 
-Begin by deeply understanding the provided technology topic: ${topic}.
-Identify key related concepts, historical context, and potential interdisciplinary connections.
-Multifaceted Analysis:
+3. Future Potential
+- Growth opportunities
+- Emerging trends
+- Market predictions
 
-Overview and Current State: Provide a concise yet thorough overview, highlighting key developments, trends, and existing research.
-Key Applications and Use Cases: Explore diverse applications across various sectors, emphasizing both current implementations and potential future use cases.
-Technical Deep Dive: Analyze the underlying technology, including key components, algorithms, and methodologies.
-Challenges and Limitations: Identify existing technical, ethical, and societal challenges, including potential biases, risks, and limitations.
-Future Trajectories and Innovations: Explore potential future developments, including emerging research areas, speculative applications, and potential breakthroughs.
-Market and Societal Impact: Analyze the potential market impact, industry adoption, and broader societal implications, considering both positive and negative aspects.
-Comparative analysis: Where appropriate, compare and contrast the current technology with related or competing technologies.
-Synthesis and Insight Generation:
-
-Go beyond summarizing existing information. Synthesize diverse perspectives and identify key insights.
-Propose potential research questions or avenues for further exploration.
-Where possible, provide potential solutions or mitigation strategies for identified challenges.
-Presentation and Interaction:
-
-Format the response in clear sections using markdown headers, ensuring readability and accessibility.
-When appropriate, use bullet points, tables, and code snippets to enhance clarity.
-Be prepared to engage in follow-up questions and provide further clarifications or elaborations.`;
+Keep responses concise and focused on key insights.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+
+    if (!text) {
+      throw new Error('No content in response');
+    }
 
     return {
       content: text,

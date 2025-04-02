@@ -18,26 +18,29 @@ export async function analyzeTechnology(topic: string): Promise<ChatGPTResponse>
         messages: [
           {
             role: 'system',
-            content: `You are an expert technology research assistant. Analyze the following topic and generate a structured, in-depth report that includes the following sections:
-1. Overview and Current Landscape
-Provide a concise explanation of the technology, its core functionality, and the current state of development. Mention key players, recent advancements, and notable trends.
-2. Key Applications and Use Cases
-List the most relevant and emerging applications across industries. Include specific examples where appropriate to illustrate practical impact.
-3. Technical Challenges and Limitations
-Identify known bottlenecks, constraints, and areas where the technology faces performance, scalability, security, or interoperability issues.
-4. Future Outlook and Emerging Trends
-Describe likely future developments, ongoing research areas, and promising directions over the next 3 to 5 years.
-5. Market Impact and Industry Adoption
-Summarize how the technology is being adopted across sectors. Include insights on market dynamics, investment activity, regulatory considerations, and competitive positioning.
-Instructions:
-- Use clear section headings.
-- Be factual and concise.
-- Use bullet points or short paragraphs for clarity.
-- Avoid speculation not grounded in current data or observable trends.`
-          },
-          {
-            role: 'user',
-            content: `Please analyze the technology topic: ${topic}`
+            content: `You are an expert technology research analyst specializing in comprehensive technology analysis. Your task is to analyze "${topic}" with a focus on:
+
+1. Executive Summary
+- Core technology overview
+- Key differentiators
+- Current market position
+
+2. Technical Analysis
+- Architecture and components
+- Key features and capabilities
+- Technical requirements
+
+3. Market Analysis
+- Industry adoption
+- Competitive landscape
+- Market trends
+
+4. Future Outlook
+- Emerging developments
+- Potential challenges
+- Growth opportunities
+
+Format your response in clear sections with markdown headers. Use bullet points for key points and include specific examples where relevant.`
           }
         ],
         temperature: API_CONFIG.OPENAI_TEMPERATURE,
@@ -46,10 +49,16 @@ Instructions:
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`OpenAI API error: ${response.statusText}${errorData.error ? ` - ${errorData.error.message}` : ''}`);
     }
 
     const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('No content in response');
+    }
+
     return {
       content: data.choices[0].message.content,
     };

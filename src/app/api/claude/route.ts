@@ -13,35 +13,35 @@ export async function POST(request: Request) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-opus-20240229',
-        max_tokens: 1024,
+        model: API_CONFIG.CLAUDE_MODEL,
+        max_tokens: API_CONFIG.CLAUDE_MAX_TOKENS,
+        temperature: API_CONFIG.CLAUDE_TEMPERATURE,
         messages: [
           {
             role: 'user',
-            content: `You are an expert technology research assistant. Analyze the following topic and generate a structured, in-depth report that includes the following sections:
+            content: `You are a technical expert specializing in deep technology analysis. Focus on the technical aspects of "${topic}":
 
-1. Overview and Current Landscape
-Provide a concise explanation of the technology, its core functionality, and the current state of development. Mention key players, recent advancements, and notable trends.
+1. Technical Deep Dive
+- Core architecture
+- Key algorithms and methodologies
+- Technical specifications
 
-2. Key Applications and Use Cases
-List the most relevant and emerging applications across industries. Include specific examples where appropriate to illustrate practical impact.
+2. Implementation Considerations
+- Integration requirements
+- Performance considerations
+- Scalability factors
 
-3. Technical Challenges and Limitations
-Identify known bottlenecks, constraints, and areas where the technology faces performance, scalability, security, or interoperability issues.
+3. Technical Challenges
+- Known limitations
+- Performance bottlenecks
+- Security considerations
 
-4. Future Outlook and Emerging Trends
-Describe likely future developments, ongoing research areas, and promising directions over the next 3 to 5 years.
+4. Technical Future
+- Emerging technical developments
+- Research directions
+- Technical innovations
 
-5. Market Impact and Industry Adoption
-Summarize how the technology is being adopted across sectors. Include insights on market dynamics, investment activity, regulatory considerations, and competitive positioning.
-
-Please analyze the technology topic: ${topic}
-
-Instructions:
-- Use clear section headings.
-- Be factual and concise.
-- Use bullet points or short paragraphs for clarity.
-- Avoid speculation not grounded in current data or observable trends.`
+Provide detailed technical insights with code examples where relevant.`
           }
         ]
       }),
