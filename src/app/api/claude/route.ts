@@ -3,7 +3,15 @@ import { API_CONFIG } from '../../../config/api';
 
 export async function POST(request: Request) {
   try {
-    const { topic } = await request.json();
+    const body = await request.json();
+    
+    // Validate input
+    if (!body.topic || typeof body.topic !== 'string' || body.topic.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Topic is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -13,37 +21,20 @@ export async function POST(request: Request) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: API_CONFIG.CLAUDE_MODEL,
-        max_tokens: API_CONFIG.CLAUDE_MAX_TOKENS,
-        temperature: API_CONFIG.CLAUDE_TEMPERATURE,
-        messages: [
-          {
-            role: 'user',
-            content: `You are a technical expert specializing in deep technology analysis. Focus on the technical aspects of "${topic}":
+        model: 'claude-3-opus-20240229',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: `You are an expert technology research analyst specializing in technical architecture and implementation details. Please provide a detailed analysis of the technology topic "${body.topic}". Include information about:
 
-1. Technical Deep Dive
-- Core architecture
-- Key algorithms and methodologies
-- Technical specifications
-
+1. Technical Architecture and Components
 2. Implementation Considerations
-- Integration requirements
-- Performance considerations
-- Scalability factors
+3. Performance Characteristics and Scalability
+4. Security Considerations and Best Practices
+5. Integration Patterns and Technical Dependencies
 
-3. Technical Challenges
-- Known limitations
-- Performance bottlenecks
-- Security considerations
-
-4. Technical Future
-- Emerging technical developments
-- Research directions
-- Technical innovations
-
-Provide detailed technical insights with code examples where relevant.`
-          }
-        ]
+Format your response in clear, well-structured paragraphs with appropriate markdown formatting.`
+        }],
       }),
     });
 
@@ -56,20 +47,11 @@ Provide detailed technical insights with code examples where relevant.`
     }
 
     const data = await response.json();
-    const content = data.content?.[0]?.text || '';
-
-    if (!content) {
-      return NextResponse.json(
-        { error: 'No content in response' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ content });
+    return NextResponse.json({ content: data.content[0].text });
   } catch (error) {
     console.error('Claude API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to analyze technology' },
+      { error: error instanceof Error ? error.message : 'Failed to process request' },
       { status: 500 }
     );
   }

@@ -11,87 +11,98 @@ interface SynthesisSection {
   keyPoints: string[];
 }
 
-async function synthesizeWithGPT4(topic: string, analyses: { gpt4: string; gemini: string; claude: string }): Promise<string> {
-  const prompt = `You are an expert technology research analyst. Your task is to synthesize insights from three different AI analyses of the technology topic "${topic}" into a cohesive, well-structured research report.
+interface SynthesisResponse {
+  content?: string;
+  error?: string;
+}
 
-The analyses come from different perspectives:
-1. GPT-4 Analysis (Comprehensive Overview):
-${analyses.gpt4}
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000;
 
-2. Claude Analysis (Technical Deep Dive):
-${analyses.claude}
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-3. Gemini Analysis (Market Trends):
-${analyses.gemini}
+export async function synthesizeWithGPT4(input: SynthesisInput): Promise<SynthesisResponse> {
+  let retryCount = 0;
+  
+  while (retryCount < MAX_RETRIES) {
+    try {
+      const response = await fetch('/api/synthesis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      });
 
-Please create a comprehensive research report that:
-1. Integrates the unique strengths of each analysis
-2. Maintains a clear structure with markdown headers
-3. Highlights technical details from Claude
-4. Incorporates market trends from Gemini
-5. Uses GPT-4's comprehensive overview as the foundation
-
-Format the report with the following sections:
-1. Executive Summary
-2. Technical Analysis
-3. Market Analysis
-4. Future Outlook
-5. Recommendations
-
-Use bullet points for key insights and include specific examples where relevant.`;
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert technology research analyst specializing in synthesizing complex technical information into clear, actionable insights.'
-          },
-          {
-            role: 'user',
-            content: prompt
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const delay = retryAfter ? parseInt(retryAfter) * 1000 : RETRY_DELAY * Math.pow(2, retryCount);
+        
+        // Dispatch retry event
+        window.dispatchEvent(new CustomEvent('retryStatus', {
+          detail: {
+            stepId: 'synthesis',
+            retryCount: retryCount + 1,
+            status: 'retrying',
+            delay
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
-    });
+        }));
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.statusText}${errorData.error ? ` - ${errorData.error.message}` : ''}`);
+        await sleep(delay);
+        retryCount++;
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { error: errorData.error || 'Failed to synthesize report' };
+      }
+
+      const data = await response.json();
+      return { content: data.content };
+    } catch (error) {
+      // Dispatch retry event for other errors
+      window.dispatchEvent(new CustomEvent('retryStatus', {
+        detail: {
+          stepId: 'synthesis',
+          retryCount: retryCount + 1,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }));
+
+      if (retryCount < MAX_RETRIES - 1) {
+        await sleep(RETRY_DELAY * Math.pow(2, retryCount));
+        retryCount++;
+        continue;
+      }
+      
+      return { error: error instanceof Error ? error.message : 'Failed to synthesize report' };
     }
-
-    const data = await response.json();
-    
-    if (!data.choices?.[0]?.message?.content) {
-      throw new Error('No content in response');
-    }
-
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Synthesis error:', error);
-    throw new Error('Failed to synthesize report');
   }
+
+  return { error: 'Maximum retry attempts reached' };
 }
 
 export async function synthesizeReport({ topic, gpt4Analysis, geminiAnalysis, claudeAnalysis }: SynthesisInput): Promise<string> {
   try {
-    const synthesizedReport = await synthesizeWithGPT4(topic, {
-      gpt4: gpt4Analysis,
-      gemini: geminiAnalysis,
-      claude: claudeAnalysis,
+    const synthesizedReport = await synthesizeWithGPT4({
+      topic,
+      gpt4Analysis,
+      geminiAnalysis,
+      claudeAnalysis,
     });
 
+    if (synthesizedReport.error) {
+      throw new Error(synthesizedReport.error);
+    }
+
+    if (!synthesizedReport.content) {
+      throw new Error('No content in response');
+    }
+
     // Add metadata and disclaimer
-    const finalReport = `${synthesizedReport}
+    const finalReport = `${synthesizedReport.content}
 
 ---
 This report was generated using Super Tech Scout, combining insights from GPT-4, Gemini, and Claude AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.
@@ -100,7 +111,7 @@ Generated on: ${new Date().toLocaleDateString()}`;
 
     return finalReport;
   } catch (error) {
-    console.error('Report synthesis failed:', error);
+    console.error('Synthesis error:', error);
     throw error;
   }
 } 

@@ -204,9 +204,14 @@ export default function Home() {
     <main className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
-            Super Tech Scout
-          </h1>
+          <div className="flex items-center justify-center mb-4">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+              Super Tech Scout
+            </h1>
+            <span className="ml-3 px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded-full">
+              V0.1
+            </span>
+          </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Research any emerging technology by querying multiple LLM APIs and get a unified report. Our tool combines insights from GPT-4, Gemini, and Claude to provide comprehensive analysis. Get detailed research reports with actionable insights in minutes.
           </p>
