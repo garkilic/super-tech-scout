@@ -152,7 +152,19 @@ export default function Home() {
         updateSubStepStatus('claude', subStep.id, 'completed', 100);
       }
 
-      const claudeAnalysis = await analyzeWithClaude(topic);
+      let claudeAnalysis;
+      try {
+        claudeAnalysis = await analyzeWithClaude(topic);
+        if (claudeAnalysis.error) {
+          throw new Error(claudeAnalysis.error);
+        }
+      } catch (error) {
+        console.error('Claude analysis failed:', error);
+        // If Claude fails, we'll still try to proceed with the synthesis using the other analyses
+        claudeAnalysis = { content: 'Claude analysis was not available for this request.' };
+        showError('Claude analysis was not available. Proceeding with other analyses.');
+      }
+
       setSteps(prev => prev.map((step, index) => 
         index === 2 ? { ...step, status: 'completed' } : step
       ));
