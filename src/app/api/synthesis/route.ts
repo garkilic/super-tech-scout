@@ -1,105 +1,103 @@
 import { NextResponse } from 'next/server';
 import { API_CONFIG } from '../../../config/api';
 
-export async function POST(request: Request) {
+const MAX_RETRIES = 3;
+const INITIAL_TIMEOUT = 45000; // 45 seconds
+const MAX_TIMEOUT = 180000; // 180 seconds
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeout: number) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   try {
-    const body = await request.json();
-    
-    // Validate input
-    if (!body.topic || typeof body.topic !== 'string' || body.topic.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Topic is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
 
-    if (!body.gpt4Analysis || typeof body.gpt4Analysis !== 'string' || body.gpt4Analysis.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'GPT-4 analysis is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
+export async function POST(request: Request) {
+  let lastError = null;
 
-    if (!body.geminiAnalysis || typeof body.geminiAnalysis !== 'string' || body.geminiAnalysis.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Gemini analysis is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const body = await request.json();
+      
+      // Validate input
+      if (!body.topic || typeof body.topic !== 'string' || body.topic.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Topic is required and must be a non-empty string' },
+          { status: 400 }
+        );
+      }
 
-    if (!body.claudeAnalysis || typeof body.claudeAnalysis !== 'string' || body.claudeAnalysis.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Claude analysis is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
+      if (!body.gpt4Analysis || typeof body.gpt4Analysis !== 'string' || body.gpt4Analysis.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'GPT-4 analysis is required and must be a non-empty string' },
+          { status: 400 }
+        );
+      }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_CONFIG.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert technology research analyst specializing in synthesizing complex technical information into clear, actionable insights.'
+      if (!body.geminiAnalysis || typeof body.geminiAnalysis !== 'string' || body.geminiAnalysis.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Gemini analysis is required and must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+
+      if (!body.claudeAnalysis || typeof body.claudeAnalysis !== 'string' || body.claudeAnalysis.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Claude analysis is required and must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+
+      // Calculate timeout for this attempt
+      const timeout = Math.min(INITIAL_TIMEOUT * Math.pow(2, attempt), MAX_TIMEOUT);
+
+      const response = await fetchWithTimeout(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_CONFIG.OPENAI_API_KEY}`,
           },
-          {
-            role: 'user',
-            content: `You are an expert technology research analyst. Your task is to synthesize insights from three different AI analyses of the technology topic "${body.topic}" into a cohesive, well-structured research report.
-
-The analyses are from GPT-4, Gemini, and Claude. Your goal is to create a unified report that:
-1. Eliminates redundancy
-2. Resolves any contradictions
-3. Maintains a consistent tone and style
-4. Presents information in a clear, logical flow
-
-Please structure your response as a markdown document with the following sections:
+          body: JSON.stringify({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert technology research analyst specializing in synthesizing complex technical information into clear, actionable insights.'
+              },
+              {
+                role: 'user',
+                content: `Synthesize these analyses of "${body.topic}" into a concise, well-structured report. Focus on key insights and eliminate redundancy.
 
 # Research Report: ${body.topic}
 
 ## Executive Summary
-[2-3 paragraphs providing a high-level overview]
-
-## Technology Overview
-[2-3 paragraphs about core components and architecture]
+[Key findings and recommendations]
 
 ## Technical Analysis
-[3-4 paragraphs about implementation details and performance]
+[Core architecture, implementation details, and performance considerations]
 
-## Market Analysis
-[3-4 paragraphs about market trends, adoption, and investment]
+## Market & Industry Analysis
+[Market trends, adoption, competition]
 
-## Security and Compliance
-[2-3 paragraphs about security features and regulatory considerations]
+## Security & Integration
+[Security features, compliance, integration patterns]
 
-## Integration and Implementation
-[2-3 paragraphs about practical implementation considerations]
+## Future Outlook & Recommendations
+[Emerging trends and strategic recommendations]
 
-## Future Outlook
-[3-4 paragraphs about emerging trends and potential developments]
-
-## Strategic Recommendations
-[2-3 paragraphs with actionable insights]
-
-## Risk Assessment
-[2-3 paragraphs about technical, business, and security risks]
-
-## Conclusion
-[2-3 paragraphs summarizing key takeaways]
-
-Guidelines:
-- Use clear, professional language
-- Keep paragraphs concise (2-4 sentences)
-- Use bullet points sparingly and only when needed
-- Maintain a consistent technical depth throughout
-- Include specific examples and data points where available
-- Cite which AI model provided key insights when relevant
-
-Here are the three analyses to synthesize:
+Here are the analyses to synthesize:
 
 GPT-4 Analysis:
 ${body.gpt4Analysis}
@@ -109,38 +107,56 @@ ${body.geminiAnalysis}
 
 Claude Analysis:
 ${body.claudeAnalysis}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: `OpenAI API error: ${response.statusText}${errorData.error ? ` - ${errorData.error.message}` : ''}` },
-        { status: response.status }
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2500,
+          }),
+        },
+        timeout
       );
-    }
 
-    const data = await response.json();
-    const synthesizedReport = data.choices[0].message.content;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        lastError = `OpenAI API error: ${response.statusText}${errorData.error ? ` - ${errorData.error.message}` : ''}`;
+        
+        // If we get a rate limit error, wait before retrying
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const delay = retryAfter ? parseInt(retryAfter) * 1000 : 1000 * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        throw new Error(lastError);
+      }
 
-    // Add metadata and disclaimer
-    const finalReport = `${synthesizedReport}
+      const data = await response.json();
+      const synthesizedReport = data.choices[0].message.content;
+
+      // Add metadata and disclaimer
+      const finalReport = `${synthesizedReport}
 
 ---
 This report was generated using Super Tech Scout, combining insights from GPT-4, Gemini, and Claude AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.
 
 Generated on: ${new Date().toLocaleDateString()}`;
 
-    return NextResponse.json({ content: finalReport });
-  } catch (error) {
-    console.error('Synthesis error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process request' },
-      { status: 500 }
-    );
+      return NextResponse.json({ content: finalReport });
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'Failed to process request';
+      
+      // If this is not the last attempt, continue to next retry
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+    }
   }
+
+  // If we've exhausted all retries, return the last error
+  return NextResponse.json(
+    { error: lastError || 'Failed to process request after multiple attempts' },
+    { status: 500 }
+  );
 } 
