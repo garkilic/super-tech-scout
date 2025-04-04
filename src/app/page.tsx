@@ -9,6 +9,7 @@ import { analyzeTechnology as analyzeWithGPT4 } from '../services/chatgpt';
 import { analyzeTechnology as analyzeWithGemini } from '../services/gemini';
 import { analyzeTechnology as analyzeWithClaude } from '../services/claude';
 import { synthesizeReport } from '../services/synthesis';
+import PDFViewer from '../components/PDFViewer';
 
 type StepStatus = 'pending' | 'in_progress' | 'completed';
 
@@ -30,6 +31,7 @@ export default function Home() {
   const { showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
+  const [currentTopic, setCurrentTopic] = useState<string>('');
   const [steps, setSteps] = useState<Step[]>([
     {
       id: 'gpt4',
@@ -93,6 +95,7 @@ export default function Home() {
 
   const handleSearch = async (topic: string) => {
     setIsLoading(true);
+    setCurrentTopic(topic);
     setReport(null);
     setSteps(steps.map(step => ({ ...step, status: 'pending', subSteps: step.subSteps.map(sub => ({ ...sub, status: 'pending', progress: 0 })) })));
 
@@ -208,8 +211,9 @@ export default function Home() {
   };
 
   const handleDownload = () => {
-    // Implement PDF download functionality
-    console.log('Downloading report...');
+    // The PDF is now generated client-side using React-PDF
+    // No need for server-side PDF generation
+    console.log('PDF is being generated client-side');
   };
 
   return (
@@ -242,11 +246,13 @@ export default function Home() {
         <ProgressTracker steps={steps} />
         
         {report && steps[3].status === 'completed' && (
-          <ReportDisplay 
-            report={report} 
-            onDownload={handleDownload} 
-            isSynthesisComplete={true}
-          />
+          <div className="mt-8">
+            <PDFViewer 
+              title="Technology Research Report"
+              content={report}
+              topic={currentTopic}
+            />
+          </div>
         )}
       </div>
     </main>

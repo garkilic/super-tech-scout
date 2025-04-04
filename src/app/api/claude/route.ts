@@ -15,95 +15,94 @@ export async function POST(request: Request) {
 
     // Check if API key is available
     if (!API_CONFIG.CLAUDE_API_KEY) {
-      console.error('Claude API key is missing');
       return NextResponse.json(
         { error: 'Claude API key is not configured' },
         { status: 500 }
       );
     }
 
-    // Add timeout to the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_CONFIG.CLAUDE_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: API_CONFIG.CLAUDE_MODEL,
-          max_tokens: API_CONFIG.CLAUDE_MAX_TOKENS,
-          messages: [{
-            role: 'user',
-            content: `You are an expert technology research analyst specializing in technical architecture and implementation details. Please provide a detailed analysis of the technology topic "${body.topic}". Include information about:
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_CONFIG.CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: `You are an expert technology research analyst with deep expertise in technical architecture, implementation, and industry trends. Please provide a comprehensive, in-depth analysis of the technology topic "${body.topic}". Your analysis should be thorough and detailed, covering the following aspects:
 
 1. Technical Architecture and Components
-2. Implementation Considerations
-3. Performance Characteristics and Scalability
-4. Security Considerations and Best Practices
-5. Integration Patterns and Technical Dependencies
+   - Core components and their interactions
+   - System architecture and design patterns
+   - Data flow and processing
+   - Scalability considerations
+   - Integration points and APIs
 
-Format your response in clear, well-structured paragraphs with appropriate markdown formatting.`
-          }],
-        }),
-        signal: controller.signal,
-      });
+2. Implementation Details
+   - Development frameworks and tools
+   - Programming languages and paradigms
+   - Deployment strategies
+   - Configuration and setup requirements
+   - Best practices and patterns
 
-      clearTimeout(timeoutId);
+3. Performance and Scalability
+   - Performance characteristics and benchmarks
+   - Scalability approaches and limitations
+   - Resource requirements and optimization
+   - Caching and data management
+   - Load balancing and distribution
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Claude API error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
+4. Security Considerations
+   - Security architecture and design
+   - Authentication and authorization
+   - Data protection and encryption
+   - Common vulnerabilities and mitigations
+   - Compliance and regulatory requirements
 
-        // Handle specific error cases
-        if (response.status === 502) {
-          return NextResponse.json(
-            { error: 'Unable to connect to Claude API. Please try again later.' },
-            { status: 502 }
-          );
-        }
+5. Integration Patterns
+   - Integration approaches and patterns
+   - API design and versioning
+   - Data exchange formats and protocols
+   - Service discovery and orchestration
+   - Error handling and recovery
 
-        return NextResponse.json(
-          { error: `Claude API error: ${response.statusText}${errorData.error ? ` - ${errorData.error.message}` : ''}` },
-          { status: response.status }
-        );
-      }
+6. Industry Landscape
+   - Current market position and adoption
+   - Competing technologies and alternatives
+   - Industry trends and future outlook
+   - Use cases and success stories
+   - Challenges and limitations
 
-      const data = await response.json();
-      
-      // Check if the response has the expected structure
-      if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
-        console.error('Unexpected Claude API response format:', data);
-        return NextResponse.json(
-          { error: 'Unexpected response format from Claude API' },
-          { status: 500 }
-        );
-      }
-      
-      return NextResponse.json({ content: data.content[0].text });
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.error('Claude API request timed out');
-        return NextResponse.json(
-          { error: 'Request to Claude API timed out. Please try again.' },
-          { status: 504 }
-        );
-      }
-      throw error;
+7. Implementation Recommendations
+   - Best practices for adoption
+   - Migration strategies
+   - Resource planning and estimation
+   - Risk assessment and mitigation
+   - Success criteria and metrics
+
+Format your response in clear, well-structured markdown with appropriate headings, bullet points, and code examples where relevant. Provide specific examples, case studies, and technical details to support your analysis.`
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: `Claude API error: ${response.statusText}` },
+        { status: response.status }
+      );
     }
+
+    const data = await response.json();
+    return NextResponse.json({ content: data.content[0].text });
   } catch (error) {
     console.error('Claude API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process request' },
+      { error: 'Failed to process request' },
       { status: 500 }
     );
   }
