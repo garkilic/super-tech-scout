@@ -134,15 +134,7 @@ ${body.claudeAnalysis}`
       const data = await response.json();
       const synthesizedReport = data.choices[0].message.content;
 
-      // Add metadata and disclaimer
-      const finalReport = `${synthesizedReport}
-
----
-This report was generated using Super Tech Scout, combining insights from GPT-4, Gemini, and Claude AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.
-
-Generated on: ${new Date().toLocaleDateString()}`;
-
-      return NextResponse.json({ content: finalReport });
+      return NextResponse.json({ content: synthesizedReport });
     } catch (error) {
       lastError = error instanceof Error ? error.message : 'Failed to process request';
       

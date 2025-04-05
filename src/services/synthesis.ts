@@ -101,15 +101,18 @@ export async function synthesizeReport({ topic, gpt4Analysis, geminiAnalysis, cl
       throw new Error('No content in response');
     }
 
-    // Add metadata and disclaimer
-    const finalReport = `${synthesizedReport.content}
+    // Add metadata and disclaimer only if it's not already present
+    const hasDisclaimer = synthesizedReport.content.includes('This report was generated using Super Tech Scout');
+    if (!hasDisclaimer) {
+      return `${synthesizedReport.content}
 
 ---
 This report was generated using Super Tech Scout, combining insights from GPT-4, Gemini, and Claude AI models. The analysis represents a synthesis of current market data, technical specifications, and industry trends. While every effort has been made to ensure accuracy, organizations should conduct their own due diligence before making strategic decisions.
 
 Generated on: ${new Date().toLocaleDateString()}`;
+    }
 
-    return finalReport;
+    return synthesizedReport.content;
   } catch (error) {
     console.error('Synthesis error:', error);
     throw error;
